@@ -1,5 +1,5 @@
 
-cat > README.md << 'EOF'
+
 # 🌡️ TempBox - Temperature Data Aggregation API
 
 [![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
