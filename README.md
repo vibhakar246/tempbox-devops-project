@@ -1,4 +1,4 @@
-cd ~/tempbox-devops-project
+
 cat > README.md << 'EOF'
 # 🌡️ TempBox - Temperature Data Aggregation API
 
