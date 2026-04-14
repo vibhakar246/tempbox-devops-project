@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: tempbox-service
+  namespace: tempbox
+spec:
+  selector:
+    app: tempbox
+  ports:
+  - port: 80
+    targetPort: 5000
+  type: NodePort

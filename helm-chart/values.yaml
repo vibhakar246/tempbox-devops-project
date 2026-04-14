@@ -1,0 +1,16 @@
+replicaCount: 2
+image:
+  repository: tempbox
+  tag: latest
+  pullPolicy: IfNotPresent
+service:
+  type: NodePort
+  port: 80
+  targetPort: 5000
+resources:
+  requests:
+    memory: "128Mi"
+    cpu: "100m"
+  limits:
+    memory: "256Mi"
+    cpu: "250m"
