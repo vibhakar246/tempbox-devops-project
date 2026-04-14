@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tempbox
+  namespace: tempbox
+  labels:
+    app: tempbox
+    version: v1
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: tempbox
+  template:
+    metadata:
+      labels:
+        app: tempbox
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "5000"
+    spec:
+      containers:
+      - name: tempbox
+        image: tempbox:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 5000
+          name: http
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: API_TIMEOUT
+          valueFrom:
+            configMapKeyRef:
+              name: tempbox-config
+              key: API_TIMEOUT
+        - name: CACHE_TTL
+          valueFrom:
+            configMapKeyRef:
+              name: tempbox-config
+              key: CACHE_TTL
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "250m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 5000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 5000
+          initialDelaySeconds: 10
+          periodSeconds: 5

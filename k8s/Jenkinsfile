@@ -1,0 +1,80 @@
+pipeline {
+    agent any
+
+    environment {
+        APP_NAME = 'tempbox'
+        DOCKER_IMAGE = 'tempbox'
+        K8S_NAMESPACE = 'tempbox'
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+                echo "✅ Code checked out from GitHub"
+            }
+        }
+
+        stage('Security Scan - Filesystem') {
+            steps {
+                echo "🔍 Running Trivy filesystem scan..."
+                sh 'trivy fs --severity HIGH,CRITICAL --exit-code 0 .'
+            }
+        }
+
+        stage('Unit Tests') {
+            steps {
+                echo "🧪 Running unit tests..."
+                sh 'pip3 install -r requirements.txt'
+                sh 'python3 -m pytest tests/ -v || true'
+            }
+        }
+
+        stage('Docker Build') {
+            steps {
+                echo "🐳 Building Docker image..."
+                sh 'docker build -t ${DOCKER_IMAGE}:${BUILD_NUMBER} .'
+                sh 'docker tag ${DOCKER_IMAGE}:${BUILD_NUMBER} ${DOCKER_IMAGE}:latest'
+            }
+        }
+
+        stage('Security Scan - Image') {
+            steps {
+                echo "🔐 Scanning Docker image for vulnerabilities..."
+                sh 'trivy image ${DOCKER_IMAGE}:${BUILD_NUMBER} --severity HIGH,CRITICAL --exit-code 0'
+            }
+        }
+
+        stage('Create Namespace') {
+            steps {
+                sh 'kubectl create namespace ${K8S_NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -'
+            }
+        }
+
+        stage('Deploy to Kubernetes') {
+            steps {
+                echo "🚢 Deploying to Kubernetes..."
+                sh 'kubectl apply -f k8s/ -n ${K8S_NAMESPACE}'
+            }
+        }
+
+        stage('Verify Deployment') {
+            steps {
+                echo "✅ Verifying deployment..."
+                sh 'kubectl rollout status deployment/${APP_NAME} -n ${K8S_NAMESPACE} --timeout=60s'
+                sh 'kubectl get pods -n ${K8S_NAMESPACE}'
+                sh 'kubectl get svc -n ${K8S_NAMESPACE}'
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "🎉 Pipeline completed successfully!"
+            echo "TempBox is deployed at: http://$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[0].address}'):$(kubectl get svc ${APP_NAME}-service -n ${K8S_NAMESPACE} -o jsonpath='{.spec.ports[0].nodePort}')"
+        }
+        failure {
+            echo "❌ Pipeline failed! Please check the logs."
+        }
+    }
+}

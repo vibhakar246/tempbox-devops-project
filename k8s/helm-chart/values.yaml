@@ -1,0 +1,39 @@
+# Default values for tempbox
+replicaCount: 2
+
+image:
+  repository: tempbox
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: NodePort
+  port: 80
+  targetPort: 5000
+
+ingress:
+  enabled: false
+  host: tempbox.local
+
+resources:
+  limits:
+    cpu: 250m
+    memory: 256Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+
+config:
+  apiTimeout: 10
+  cacheTTL: 60
+  senseboxIds: "5eba5fbad46fb8001b799786,5c21ff8f919bf8001adf2488,5ade1acf223bd80019a1011c"
+
+probes:
+  livenessPath: /health
+  readinessPath: /health
